@@ -8,17 +8,18 @@ class dms
 public:
     typedef std::shared_ptr<BlockControlInfo> ptr_bc; 
 public:
-    dms() {}
+    dms() {
+        
+    }
     int OpenFile(std::string p_filename);
     int CloseFile();
     ptr_bc ReadPage(int page_id,ptr_bc dst);
-    ~dms() {}
-    int Seek(int offset, int pos); 
-    FILE * GetFile(); 
+    int WritePage(int page_id,ptr_bc src);
+    ~dms() ; 
     void IncNumPages(); 
-    int GetNumPages(); 
+    int GetNumPages() const ; 
     void SetUse(int index, int use_bit); 
-    int GetUse(int index);
+    int GetUse(int index) const;
 private:  
     std::fstream curFile;
   int numPages;
