@@ -5,30 +5,43 @@ class dms;
 
 class LRU_Replacer : public Replacer
 {
+public:
     typedef std::shared_ptr<BlockControlInfo> ptr_bc;
 public:
+    explicit LRU_Replacer(std::deque<ptr_bc> & p_free):m_free(p_free){}
     void AddCandidate(ptr_bc cand);
-    void PushToHead(ptr_bc bc);
-    void PushToTail(ptr_bc bc);
-    void Remove(ptr_bc bc);
-    ptr_bc SelectVictim();
-    
+    void Evict(ptr_bc bc);
+    void LiftUp(ptr_bc bc);
+    ~LRU_Replacer(){  }    
 private:
-    std::deque<ptr_bc> m_candidate;
-
+    std::list<ptr_bc> m_candidate;
+    std::deque<ptr_bc> & m_free;
 };
+
+
+
 class bms
 {
-    typedef std::shared_ptr<dms> ptr_dms;
-    typedef std::shared_ptr<BlockControlInfo> bc_bucket;
-    typedef std::unique_ptr<Replacer> replace_policy;
 public:
-    bms();
-    int FixPage(int page_id,int protection);
+    typedef const dms *  ptr_dms;
+    typedef std::shared_ptr<BlockControlInfo> bc_bucket;
+public:
+    bms(std::string p_name,const dms * p_dms,std::function<int(int)> p_hashfunc):bms_name(p_name),m_freeframenumber(0),
+        m_dms(p_dms),
+        m_freeframe(std::deque<bc_bucket>(DEFAULT_BUFFERSIZE)),
+        m_replacer(m_freeframe),
+        m_hashfunc(p_hashfunc)
+    {
+        for (int i = 0; i < DEFAULT_BUFFERSIZE; ++i) {
+            m_freeframe[i]=std::make_shared<BlockControlInfo>(-1,i);
+            m_frame2page[i]=-1;
+        }    
+    }
+    int FixPage(int p_page_id,int p_protection=0);
     int FixNewPage();
-    int UnFixPage(int page_id);
-    int SetDirty(int page_id);
-    int UnSetDirty(int page_id);
+    int UnFixPage(int p_page_id);
+    int SetDirty(int p_page_id);
+    int UnSetDirty(int p_page_id);
     int GetFreeFrameNumber() const ;
     void FlushBack();
 
@@ -42,16 +55,35 @@ public:
     }
 
 private:
+    class LRU_Replacer : public Replacer
+    {
+    public:
+        typedef std::shared_ptr<BlockControlInfo> ptr_bc;
+    public:
+        explicit LRU_Replacer(std::deque<ptr_bc> & p_free):m_free(p_free){}
+        void AddCandidate(ptr_bc cand);
+        int  Evict();
+        void LiftUp(ptr_bc bc);
+
+    private:
+        std::list<ptr_bc> m_candidate;
+        std::deque<ptr_bc> & m_free;
+    };
+
+
     //UNCOPYABLE
     bms(const bms & ) = delete;
     bms & operator=(const bms & ) = delete;
    
     //MEMBER
+    std::string bms_name;
+
     int m_freeframenumber;
     int m_frame2page[DEFAULT_BUFFERSIZE];
-    bc_bucket m_freeframe;
-    bc_bucket m_allocatedframe[DEFAULT_BUFFERSIZE];
+    ptr_dms m_dms;
+    std::deque<bc_bucket> m_freeframe;
+    std::list<bc_bucket> m_allocatedframe[DEFAULT_BUFFERSIZE];
     std::function<int(int)> m_hashfunc;
-    std::shared_ptr<Replacer> m_replacer; 
+    LRU_Replacer m_replacer; 
 };
 
