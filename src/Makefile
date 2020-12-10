@@ -123,6 +123,33 @@ db_dms/fast:
 	$(MAKE) -f CMakeFiles/db_dms.dir/build.make CMakeFiles/db_dms.dir/build
 .PHONY : db_dms/fast
 
+bms/bms.o: bms/bms.cpp.o
+
+.PHONY : bms/bms.o
+
+# target to build an object file
+bms/bms.cpp.o:
+	$(MAKE) -f CMakeFiles/db_dms.dir/build.make CMakeFiles/db_dms.dir/bms/bms.cpp.o
+.PHONY : bms/bms.cpp.o
+
+bms/bms.i: bms/bms.cpp.i
+
+.PHONY : bms/bms.i
+
+# target to preprocess a source file
+bms/bms.cpp.i:
+	$(MAKE) -f CMakeFiles/db_dms.dir/build.make CMakeFiles/db_dms.dir/bms/bms.cpp.i
+.PHONY : bms/bms.cpp.i
+
+bms/bms.s: bms/bms.cpp.s
+
+.PHONY : bms/bms.s
+
+# target to generate assembly for a file
+bms/bms.cpp.s:
+	$(MAKE) -f CMakeFiles/db_dms.dir/build.make CMakeFiles/db_dms.dir/bms/bms.cpp.s
+.PHONY : bms/bms.cpp.s
+
 db.o: db.cpp.o
 
 .PHONY : db.o
@@ -150,6 +177,33 @@ db.cpp.s:
 	$(MAKE) -f CMakeFiles/db_dms.dir/build.make CMakeFiles/db_dms.dir/db.cpp.s
 .PHONY : db.cpp.s
 
+dms/dms.o: dms/dms.cpp.o
+
+.PHONY : dms/dms.o
+
+# target to build an object file
+dms/dms.cpp.o:
+	$(MAKE) -f CMakeFiles/db_dms.dir/build.make CMakeFiles/db_dms.dir/dms/dms.cpp.o
+.PHONY : dms/dms.cpp.o
+
+dms/dms.i: dms/dms.cpp.i
+
+.PHONY : dms/dms.i
+
+# target to preprocess a source file
+dms/dms.cpp.i:
+	$(MAKE) -f CMakeFiles/db_dms.dir/build.make CMakeFiles/db_dms.dir/dms/dms.cpp.i
+.PHONY : dms/dms.cpp.i
+
+dms/dms.s: dms/dms.cpp.s
+
+.PHONY : dms/dms.s
+
+# target to generate assembly for a file
+dms/dms.cpp.s:
+	$(MAKE) -f CMakeFiles/db_dms.dir/build.make CMakeFiles/db_dms.dir/dms/dms.cpp.s
+.PHONY : dms/dms.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -159,9 +213,15 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
 	@echo "... db_dms"
+	@echo "... bms/bms.o"
+	@echo "... bms/bms.i"
+	@echo "... bms/bms.s"
 	@echo "... db.o"
 	@echo "... db.i"
 	@echo "... db.s"
+	@echo "... dms/dms.o"
+	@echo "... dms/dms.i"
+	@echo "... dms/dms.s"
 .PHONY : help
 
 

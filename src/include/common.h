@@ -7,12 +7,18 @@
 #include <fstream>
 #include <memory>
 #include <list>
+#include <bitset>
+#include <cmath>
+#include <map>
+
+
+#include <cassert>
 const int FRAMESIZE = 4096;
 const int DEFAULT_BUFFERSIZE=1024;// 1024 FRAMES
-const int MAXPAGE = 500000;
+const int MAXPAGE = 50000;
 
 struct BufferFrame{
-    char field[FRAMESIZE];
+    char field[FRAMESIZE]={};
 };
 
 
@@ -27,6 +33,5 @@ struct BlockControlInfo{
     int frame_id;
 };
 
-BufferFrame bufferpool[DEFAULT_BUFFERSIZE];
 
 

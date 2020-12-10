@@ -1,34 +1,47 @@
 #include "bms.h"
 #include "../include/common.h"
-void bms::LRU_Replacer::AddCandidate(ptr_bc cand)
+#include "../dms/dms.h"
+void LRU_Replacer::AddCandidate(ptr_bc cand)
 {
-    m_candidate.push_front(cand);
+    int frame_id_key = cand->frame_id;
+    std::shared_ptr<LRU_Node> to_add(std::make_shared<LRU_Node>(m_candidate_header,m_candidate_header->next,cand));
+    m_candidate_header->next=to_add;
+    if(!m_candidate_header->prev) m_candidate_header->prev=to_add;
+    m_candidate.insert({frame_id_key,to_add});
+    
 }
 
-int bms::LRU_Replacer::Evict()
+LRU_Replacer::ptr_bc LRU_Replacer::Evict()
 {
-    int frame_id_ret = -1;
-    if(m_candidate.empty()) return frame_id_ret;
-    ptr_bc out = m_candidate.back();
-    frame_id_ret=out->frame_id;
-    m_free.push_back(out);
-    m_candidate.pop_back();
-    return frame_id_ret;
+    if(!m_candidate_header->prev) return nullptr;
+    auto to_out = m_candidate_header->prev;
+    to_out->prev->next=nullptr;
+    m_candidate_header->prev=to_out->prev;
+    m_candidate.erase(to_out->BCI->frame_id);
+    m_free.push_back(to_out->BCI);
+    return to_out->BCI;
 }
 
 
-void bms::LRU_Replacer::LiftUp(ptr_bc bc)
+void LRU_Replacer::LiftUp(ptr_bc bc)
 {
-    auto it=std::find(m_candidate.begin(),m_candidate.end(),bc);
-    ptr_bc to_swap(*it);
-    m_candidate.push_front(to_swap);
-    m_candidate.erase(it);
+    if(!bc) return ;
+    if(0==m_candidate.count(bc->frame_id)) return ;
+
+    auto pos=m_candidate[bc->frame_id];
+    AddCandidate(bc);
+
+    pos->prev->next=pos->next;
+    pos->next->prev=pos->prev;
+
+    assert(pos.use_count()==0);
+    m_candidate.erase(bc->frame_id);
+    m_candidate.insert({bc->frame_id,m_candidate_header->next});
 }
 
 int bms::FixPage(int p_page_id,int p_protection){
     //if current page inbuffer
     auto bucket = m_allocatedframe[m_hashfunc(p_page_id)];
-    if(bucket.empty()) return -1;
 
     auto it = bucket.cbegin();
     for(;it!=bucket.cend();++it)
@@ -40,6 +53,9 @@ int bms::FixPage(int p_page_id,int p_protection){
     }
     //inbuffer
     if(it!=bucket.cend()){
+        //lift it to most recently used end
+        m_replacer.LiftUp(*it);
+
         return (*it)->frame_id;
     }
 
@@ -48,25 +64,103 @@ int bms::FixPage(int p_page_id,int p_protection){
     //if buffer full
     if(m_freeframenumber==0)
     {
-        std::cout << "buffer pool already full" << "\n";
+        std::cerr << "buffer pool already full" << "\n";
         //evict 
-        int to_evict = m_replacer.Evict();
+        bc_bucket ret = m_replacer.Evict();
 
-        //insert into bucket
-        m_dms.Read
+        if(ret)
+        {
+            if(ret->dirty)
+            {
+                //write back
+                m_dms->WritePage(ret->page_id,ret);
+                ret->dirty=false;
+            }
+        }else{
+            //no free frame and can not evict?
+            std::cerr<<"No free frame and Evict Fail!\n";
+            return -1;
+        }
+        ret->page_id = -1;
+    }
+     //now buffer still available
+     //pick a bcb from freeframe
+    auto free_frame = m_freeframe.front();
+    m_freeframe.pop_front();
+
+
+    //if it is a new page dms will return imediately
+    //else readpage
+    m_dms->ReadPage(p_page_id,free_frame);
+    free_frame->page_id=p_page_id;
+    bucket.push_back(free_frame);
+
+    //add into lru
+    m_replacer.AddCandidate(free_frame);
+    
+    //update metadata
+    m_freeframenumber--;
+    m_frame2page[free_frame->frame_id]=p_page_id;
+    return free_frame->frame_id;
+}
+int bms::FixNewPage()
+{
+    //always set dirty flag after call this method
+    m_dms->IncNumPages();
+    int new_page_id = m_dms->GetNumPages();
+    int new_frame_id = FixPage(new_page_id);
+    SetDirty(new_page_id,true);//new page always dirty
+    return new_frame_id;
+}
+
+int bms::UnFixPage(int p_page_id)
+{
+    //find corresponding BCI
+    auto ret= LocateBlockControlInfo(p_page_id);
+    if(!ret)
+    {
+        std::cerr<<"Have not been in buffer yet!\n";
+        return -1;
     }
 
 
+
+
 }
-    int FixNewPage();
-    int UnFixPage(int p_page_id);
-    int SetDirty(int p_page_id);
-    int UnSetDirty(int p_page_id);
-    int GetFreeFrameNumber() const ;
-    void FlushBack();
+int bms::SetDirty(int p_page_id,bool flag)
+{
+    auto ret= LocateBlockControlInfo(p_page_id);
+    if(!ret) return -1;
+    ret->dirty = flag;
+    
+    return 0;//0 for success
+}
 
-    // internal
-    void evict();
+int bms::GetFreeFrameNumber() const{
+    return m_freeframenumber;
+}
+void FlushBack()
+{
 
+}
+
+bms::bc_bucket bms::LocateBlockControlInfo(int p_page_id)
+{
+    auto bucket = m_allocatedframe[m_hashfunc(p_page_id)];
+
+    auto it = bucket.cbegin();
+    for(;it!=bucket.cend();++it)
+    {
+        if((*it)->page_id==p_page_id)
+        {
+            break;
+        }
+    }
+    //inbuffer
+    if(it!=bucket.cend())
+        return *it;
+    else
+        return nullptr;
+}
 
 

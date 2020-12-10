@@ -1,6 +1,9 @@
 #pragma once
 #include "../include/common.h"
 #include "Replacer.h"
+#include "../dms/dms.h"
+extern BufferFrame bufferpool[DEFAULT_BUFFERSIZE];
+
 class dms;
 
 class LRU_Replacer : public Replacer
@@ -8,13 +11,26 @@ class LRU_Replacer : public Replacer
 public:
     typedef std::shared_ptr<BlockControlInfo> ptr_bc;
 public:
-    explicit LRU_Replacer(std::deque<ptr_bc> & p_free):m_free(p_free){}
+    explicit LRU_Replacer(std::deque<ptr_bc> & p_free):m_free(p_free){
+        m_candidate_header=std::make_shared<LRU_Node>(nullptr,nullptr,nullptr);
+        m_candidate.insert({-1,m_candidate_header});
+    }
     void AddCandidate(ptr_bc cand);
-    void Evict(ptr_bc bc);
+    ptr_bc Evict();
     void LiftUp(ptr_bc bc);
     ~LRU_Replacer(){  }    
 private:
-    std::list<ptr_bc> m_candidate;
+    struct LRU_Node{
+        LRU_Node(std::shared_ptr<LRU_Node> p_prev,std::shared_ptr<LRU_Node> p_next,ptr_bc p_BCI):
+            prev(p_prev),next(p_next),BCI(p_BCI){
+
+            }
+        std::shared_ptr<LRU_Node> prev;
+        std::shared_ptr<LRU_Node> next;
+        ptr_bc BCI;
+    };
+    std::shared_ptr<LRU_Node> m_candidate_header;
+    std::map<int,std::shared_ptr<LRU_Node>> m_candidate;
     std::deque<ptr_bc> & m_free;
 };
 
@@ -23,10 +39,10 @@ private:
 class bms
 {
 public:
-    typedef const dms *  ptr_dms;
+    typedef  dms *  ptr_dms;
     typedef std::shared_ptr<BlockControlInfo> bc_bucket;
 public:
-    bms(std::string p_name,const dms * p_dms,std::function<int(int)> p_hashfunc):bms_name(p_name),m_freeframenumber(0),
+    bms(std::string p_name,dms * p_dms,std::function<int(int)> p_hashfunc):bms_name(p_name),m_freeframenumber(0),
         m_dms(p_dms),
         m_freeframe(std::deque<bc_bucket>(DEFAULT_BUFFERSIZE)),
         m_replacer(m_freeframe),
@@ -40,13 +56,12 @@ public:
     int FixPage(int p_page_id,int p_protection=0);
     int FixNewPage();
     int UnFixPage(int p_page_id);
-    int SetDirty(int p_page_id);
-    int UnSetDirty(int p_page_id);
+    int SetDirty(int p_page_id,bool flag);
     int GetFreeFrameNumber() const ;
     void FlushBack();
-
+    bc_bucket LocateBlockControlInfo(int p_page_id);
     // internal
-    void evict();
+    bc_bucket Evict(){ return m_replacer.Evict(); }
     
 
     ~bms() {
@@ -55,22 +70,6 @@ public:
     }
 
 private:
-    class LRU_Replacer : public Replacer
-    {
-    public:
-        typedef std::shared_ptr<BlockControlInfo> ptr_bc;
-    public:
-        explicit LRU_Replacer(std::deque<ptr_bc> & p_free):m_free(p_free){}
-        void AddCandidate(ptr_bc cand);
-        int  Evict();
-        void LiftUp(ptr_bc bc);
-
-    private:
-        std::list<ptr_bc> m_candidate;
-        std::deque<ptr_bc> & m_free;
-    };
-
-
     //UNCOPYABLE
     bms(const bms & ) = delete;
     bms & operator=(const bms & ) = delete;

@@ -1,4 +1,8 @@
 #include <iostream>
+#include "include/common.h"
+
+BufferFrame bufferpool[DEFAULT_BUFFERSIZE]{};
+
 
 int main()
 {
