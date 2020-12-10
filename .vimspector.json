@@ -1,0 +1,23 @@
+{
+  "configurations": {
+    "Launch": {
+      "adapter": "vscode-cpptools",
+      "configuration": {
+        "request": "launch",
+        "program": " /home/ddqp/dddb/bin/program ",
+"cwd": "/home/ddqp/dddb/debug",
+"externalConsole": true,
+        "MIMode": "gdb"
+      }
+    },
+    "Attach": {
+      "adapter": "vscode-cpptools",
+      "configuration": {
+        "request": "attach",
+        "program": " /home/ddqp/dddb/bin/program ",
+     "MIMode": "gdb"
+      }
+    }
+    
+  }
+}
