@@ -8,7 +8,10 @@ CMakeFiles/db_dms.dir/bms/bms.cpp.o
  /home/ddqp/dddb/src/dms/dms.h
  /home/ddqp/dddb/src/include/common.h
 CMakeFiles/db_dms.dir/db.cpp.o
+ /home/ddqp/dddb/src/bms/Replacer.h
+ /home/ddqp/dddb/src/bms/bms.h
  /home/ddqp/dddb/src/db.cpp
+ /home/ddqp/dddb/src/dms/dms.h
  /home/ddqp/dddb/src/include/common.h
 CMakeFiles/db_dms.dir/dms/dms.cpp.o
  /home/ddqp/dddb/src/dms/dms.cpp

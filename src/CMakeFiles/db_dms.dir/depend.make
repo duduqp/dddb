@@ -7,7 +7,10 @@ CMakeFiles/db_dms.dir/bms/bms.cpp.o: bms/bms.h
 CMakeFiles/db_dms.dir/bms/bms.cpp.o: dms/dms.h
 CMakeFiles/db_dms.dir/bms/bms.cpp.o: include/common.h
 
+CMakeFiles/db_dms.dir/db.cpp.o: bms/Replacer.h
+CMakeFiles/db_dms.dir/db.cpp.o: bms/bms.h
 CMakeFiles/db_dms.dir/db.cpp.o: db.cpp
+CMakeFiles/db_dms.dir/db.cpp.o: dms/dms.h
 CMakeFiles/db_dms.dir/db.cpp.o: include/common.h
 
 CMakeFiles/db_dms.dir/dms/dms.cpp.o: dms/dms.cpp

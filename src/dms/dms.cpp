@@ -15,12 +15,32 @@ int dms::OpenFile(std::string p_filename)
     //is file exists?
     //...
     //
+    auto basepath = std::filesystem::current_path();
+    std::filesystem::path p{basepath/"data.dbf"};
+    std::error_code err{};
+
+    auto isexisted = std::filesystem::exists(p,err);
+    if(!isexisted)
+    {
+        //then create
+        std::fstream init_stream(p,std::ios::out|std::ios::app);
+        init_stream.seekp(0);
+
+        char zero[2*FRAMESIZE-2*sizeof(int)]={0}; 
+        init_stream<<0<<0;
+        init_stream.write(zero,sizeof(zero));
+        init_stream.flush();
+    }
+
+
+    //"data.dbf" must exist
     curFile.open(p_filename,std::ios::ate|std::ios::in|std::ios::out);
     if(!curFile) 
     {
         std::cerr<<"File : "<<p_filename<<"Not Exists" << std::endl;
         return -1;    
     }else{
+        std::cout << "data.dbf exists" << std::endl;
         //fix size directory format :
         //page_count : int 4B
         //2-page directory bitmap about 60000+ page-use-bit
@@ -46,7 +66,7 @@ int dms::CloseFile()
 dms::ptr_bc dms::ReadPage(int page_id,ptr_bc dst){
     //if FixNewPage for insert index or ...
     //that must be numpages = page_id + 1;
-    if(dbFile_dir.GetPage(page_id)==-1)
+    if(!dbFile_dir.IsPageUsed(page_id))
     {
         curFile.seekp((page_id+DIR_PAGE_NUM)*FRAMESIZE);
         curFile << "header" << 0;
@@ -86,9 +106,6 @@ int dms::WritePage(int page_id,ptr_bc src)
 dms::~dms() {
     CloseFile();
 }
-void dms::IncNumPages(){
-    dbFile_dir.AddNextPage();
-} 
 int dms::GetNumPages()const 
 {
     return dbFile_dir.GetPageCount() ;
@@ -98,6 +115,6 @@ void dms::SetUse(int index, int use_bit){
 } 
 bool dms::IsUsed(int index) const
 {
-    return dbFile_dir.GetPage(index);
+    return dbFile_dir.IsPageUsed(index);
 }
 

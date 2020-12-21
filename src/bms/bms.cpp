@@ -23,20 +23,23 @@ LRU_Replacer::ptr_bc LRU_Replacer::Evict()
 }
 
 
-void LRU_Replacer::LiftUp(ptr_bc bc)
+void LRU_Replacer::LiftUp(int frame_id)
 {
-    if(!bc) return ;
-    if(0==m_candidate.count(bc->frame_id)) return ;
+    if(0==m_candidate.count(frame_id)) return ;
 
-    auto pos=m_candidate[bc->frame_id];
-    AddCandidate(bc);
+    auto pos=m_candidate[frame_id];
+    AddCandidate(pos->BCI);
 
     pos->prev->next=pos->next;
     pos->next->prev=pos->prev;
 
     assert(pos.use_count()==0);
-    m_candidate.erase(bc->frame_id);
-    m_candidate.insert({bc->frame_id,m_candidate_header->next});
+    m_candidate.erase(frame_id);
+    m_candidate.insert({frame_id,m_candidate_header->next});
+}
+void LRU_Replacer::Remove(int frame_id)
+{
+
 }
 
 int bms::FixPage(int p_page_id,int p_protection){
@@ -54,7 +57,7 @@ int bms::FixPage(int p_page_id,int p_protection){
     //inbuffer
     if(it!=bucket.cend()){
         //lift it to most recently used end
-        m_replacer.LiftUp(*it);
+        m_replacer.LiftUp((*it)->frame_id);
 
         return (*it)->frame_id;
     }
@@ -106,8 +109,8 @@ int bms::FixPage(int p_page_id,int p_protection){
 int bms::FixNewPage()
 {
     //always set dirty flag after call this method
-    m_dms->IncNumPages();
-    int new_page_id = m_dms->GetNumPages();
+    
+    int new_page_id = m_dms->NewPage();
     int new_frame_id = FixPage(new_page_id);
     SetDirty(new_page_id,true);//new page always dirty
     return new_frame_id;
@@ -122,9 +125,10 @@ int bms::UnFixPage(int p_page_id)
         std::cerr<<"Have not been in buffer yet!\n";
         return -1;
     }
-
-
-
+    m_replacer.Remove(ret->frame_id);
+    ret->page_id=-1;
+    m_freeframe.push_back(ret);
+    m_allocatedframe[m_hashfunc(p_page_id)].remove(ret);
 
 }
 int bms::SetDirty(int p_page_id,bool flag)

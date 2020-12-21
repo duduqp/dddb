@@ -17,7 +17,8 @@ public:
     }
     void AddCandidate(ptr_bc cand);
     ptr_bc Evict();
-    void LiftUp(ptr_bc bc);
+    void LiftUp(int frame_id);
+    void Remove(int frame_id);
     ~LRU_Replacer(){  }    
 private:
     struct LRU_Node{
@@ -82,7 +83,7 @@ private:
     ptr_dms m_dms;
     std::deque<bc_bucket> m_freeframe;
     std::list<bc_bucket> m_allocatedframe[DEFAULT_BUFFERSIZE];
-    std::function<int(int)> m_hashfunc;
     LRU_Replacer m_replacer; 
+    std::function<int(int)> m_hashfunc;
 };
 

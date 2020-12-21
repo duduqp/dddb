@@ -1,6 +1,6 @@
 #pragma once
 #include "../include/common.h"
-
+#include <filesystem>
 /*
  * a Directory itself is  pages of dir , it manages the pages in a dbfile
  * typically contains checksum free slots and page id page size offset ... 
@@ -42,7 +42,10 @@ public:
         if(flag&&(use_bit==1)) return 1;
         if(!flag&&(use_bit==0)) return 0;
         if(page_id>=MAXPAGE) return -1;
+        // not used now set it in use 
+        
         int num_32 = page_id/sizeof(int);
+
         int num_bit = (page_id+1)%sizeof(int);
         if(num_bit== 0 ) num_bit = sizeof(int);
         unsigned int mask = 1U << (num_bit-1);
@@ -55,6 +58,7 @@ public:
             page_bitmap[page_id/sizeof(int)]&=(~mask);
             page_count--;
         }
+        if(page_id > page_max) page_max=page_id;
         return use_bit;
     }
 
@@ -77,7 +81,7 @@ public:
        int inbyte = 0;
         for(int j=0;j<(page_max+1)%sizeof(int);++j)
         {
-            if(((1U<<inbyte)&page_bitmap[i])==0)
+            if(((1UL<<inbyte)&page_bitmap[i])==0)
             {
                 return i*sizeof(int)+inbyte;
             }
@@ -121,7 +125,7 @@ public:
 private:
     int page_max;
     int page_count;
-    int page_bit[FRAMESIZE/2];
+    int page_bit[FRAMESIZE*2];
     int *page_bitmap;
 };
 
@@ -137,7 +141,8 @@ public:
     ptr_bc ReadPage(int page_id,ptr_bc dst);
     int WritePage(int page_id,ptr_bc src);
     ~dms() ; 
-    void IncNumPages(); 
+    int NewPage(){ return dbFile_dir.GetPage(); } 
+
     int GetNumPages() const ; 
     void SetUse(int index, int use_bit); 
     bool IsUsed(int index) const;
