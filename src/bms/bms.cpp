@@ -6,17 +6,21 @@ void LRU_Replacer::AddCandidate(ptr_bc cand)
     int frame_id_key = cand->frame_id;
     std::shared_ptr<LRU_Node> to_add(std::make_shared<LRU_Node>(m_candidate_header,m_candidate_header->next,cand));
     m_candidate_header->next=to_add;
-    if(!m_candidate_header->prev) m_candidate_header->prev=to_add;
+    if(m_candidate_header->prev==m_candidate_header) m_candidate_header->prev=to_add;
      m_candidate.insert({frame_id_key,to_add});
-    
+   
+     std::cout << "LRU after insert at front ";
+     std::cout << m_candidate.size() << std::endl;
+     std::cout << "m_candidate_header prev and next : " <<m_candidate_header->prev->BCI->frame_id <<" " <<
+         m_candidate_header->next->BCI->frame_id<<std::endl;
 }
 
 LRU_Replacer::ptr_bc LRU_Replacer::Evict()
 {
-    if(!m_candidate_header->prev) return nullptr;
+    if(m_candidate_header->prev==m_candidate_header) return nullptr;
     auto to_out = m_candidate_header->prev;
-    to_out->prev->next=nullptr;
-    m_candidate_header->prev=to_out->prev;
+    to_out->prev->next=to_out->next;
+    to_out->next->prev=to_out->prev;
     m_candidate.erase(to_out->BCI->frame_id);
     m_free.push_back(to_out->BCI);
     return to_out->BCI;
@@ -25,17 +29,24 @@ LRU_Replacer::ptr_bc LRU_Replacer::Evict()
 
 void LRU_Replacer::LiftUp(int frame_id)
 {
+    std::cout << "LRU lift up  frame_id " << frame_id << std::endl; 
     if(0==m_candidate.count(frame_id)) return ;
 
-    auto pos=m_candidate[frame_id];
-    AddCandidate(pos->BCI);
+    auto &pos=m_candidate[frame_id];
+    
 
     pos->prev->next=pos->next;
     pos->next->prev=pos->prev;
 
-    assert(pos.use_count()==0);
-    m_candidate.erase(frame_id);
-    m_candidate.insert({frame_id,m_candidate_header->next});
+    pos->next=m_candidate_header->next;
+    pos->prev=m_candidate_header;
+
+    m_candidate_header->next->prev=pos;
+    
+    m_candidate_header->next=pos;
+    if(m_candidate_header->prev==m_candidate_header) m_candidate_header->prev=pos;
+    std::cout << "adjust lru list ptr "<<std::endl;
+    std::cout << "adjusted lru node use count should be 2? " << pos.use_count() <<std::endl;
 }
 void LRU_Replacer::Remove(int frame_id)
 {
@@ -54,7 +65,8 @@ void LRU_Replacer::Remove(int frame_id)
 
 int bms::FixPage(int p_page_id,int p_protection){
     //if current page inbuffer
-    auto bucket = m_allocatedframe[m_hashfunc(p_page_id)];
+    std::cout <<"this page_id "<<p_page_id<<" will be hash to " <<m_hashfunc(p_page_id)<<std::endl;
+    auto &bucket = m_allocatedframe[m_hashfunc(p_page_id)];
 
     auto it = bucket.cbegin();
     for(;it!=bucket.cend();++it)
@@ -67,6 +79,8 @@ int bms::FixPage(int p_page_id,int p_protection){
     //inbuffer
     if(it!=bucket.cend()){
         //lift it to most recently used end
+        
+        std::cout << "hit for page_id " << p_page_id <<std::endl;
         m_replacer.LiftUp((*it)->frame_id);
 
         //hit
@@ -78,7 +92,7 @@ int bms::FixPage(int p_page_id,int p_protection){
     //allocate new frame
     //miss -> execute some io
     //...
-    
+    std::cout << "miss for page_id : " <<p_page_id <<std::endl;
     //if buffer full
     if(0==m_freeframenumber)
     {
@@ -106,6 +120,7 @@ int bms::FixPage(int p_page_id,int p_protection){
     auto free_frame = m_freeframe.front();
     m_freeframe.pop_front();
 
+    std::cout << "pick free frame_id "<<free_frame->frame_id<<std::endl;
 
     //if it is a new page dms will return imediately
     //else readpage
@@ -117,6 +132,8 @@ int bms::FixPage(int p_page_id,int p_protection){
     m_replacer.AddCandidate(free_frame);
     
     //update metadata
+    
+
     m_freeframenumber--;
     m_frame2page[free_frame->frame_id]=p_page_id;
     return free_frame->frame_id;
@@ -163,20 +180,26 @@ void bms::FlushBack()
     //flush back all alocated frame and reset metadata 
     //may lock ...
     
+    std::cout << "flush back "<<std::endl;
     for(int i=0;i<DEFAULT_BUFFERSIZE;++i)
     {
+        std::cout << " dealing with bucket " << i << std::endl;
         if(auto bucket= m_allocatedframe[i];!bucket.empty())
         {
-            for(auto & bc: bucket)
+            for(auto  bc: bucket)
             {
+                std::cout << i<<"'s bucket member" <<std::endl; 
                 if(bc->dirty) m_dms->WritePage(bc->page_id,bc);
                 m_freeframe.push_back(bc);
-                bucket.remove(bc);
+               // bucket.remove(bc);//!!!!!! bug fuck
+                std::cout << "bucket remove" << std::endl;
                 m_replacer.Remove(bc->frame_id);
+                std::cout << "lru remove " <<std::endl;
                 bc->dirty=false;
                 bc->page_id=-1;
                 //bc->pin_count=0;
             }
+            bucket.clear();
         }
     }
 

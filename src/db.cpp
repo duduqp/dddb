@@ -1,4 +1,6 @@
 #include <iostream>
+#include <utility>
+
 #include "include/common.h"
 
 #include "bms/bms.h"
@@ -7,26 +9,33 @@
 
 BufferFrame bufferpool[DEFAULT_BUFFERSIZE]{};
 
+unsigned int myhash(int seed) 
+{
+    return std::hash<int>{}(seed)%DEFAULT_BUFFERSIZE;
+}
+
 
 int main()
 {
 
     dms d;
     d.OpenFile("data.dbf");
-    bms b("mybms",&d,[](int seed)->int{
-          return (seed*42)%DEFAULT_BUFFERSIZE;
-          });
+    bms b("mybms",&d,std::function<int(int)>{myhash});
 
     auto dir = d.GetDirView();
 
-    std::cout << "initial dir page count : " << dir.GetPageCount() <<std::endl;
-   
-    std::cout << std::boolalpha << dir.IsPageUsed(13) <<std::endl;
+    int new_frame_id = b.FixNewPage();
+    std::cout << new_frame_id << std::endl;
+    std::cout << b.GetFreeFrameNumber() << std::endl;
 
-    dir.SetPage(13,1);
 
-    dir.ShowPageMap(13);
-    std::cout << std::boolalpha << dir.IsPageUsed(13) <<std::endl;
+    int new_frame_id_2 = b.FixPage(0);
+    std::cout << "check page_id 0 frame_id : " << new_frame_id_2 << std::endl;
+    assert(0==b.FrameIdtoPageId(new_frame_id_2));
+
+
+
+
 
     return 0;
 }

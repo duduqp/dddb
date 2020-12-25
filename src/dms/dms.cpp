@@ -1,4 +1,5 @@
 #include "dms.h"
+#include <cstring>
 extern const int DIR_PAGE_NUM=2;
 
 extern BufferFrame bufferpool[DEFAULT_BUFFERSIZE];
@@ -77,7 +78,10 @@ dms::ptr_bc dms::ReadPage(int page_id,ptr_bc dst){
     if(!dbFile_dir.IsPageUsed(page_id))
     {
         curFile.seekp((page_id+DIR_PAGE_NUM)*FRAMESIZE);
-        curFile << "header" << 0;
+        char headermsg[FRAMESIZE]="this is a header";
+        std::cout << strlen(headermsg) << std::endl;
+        //assert(16==sizeof(headermsg));
+        curFile.write(headermsg,strlen(headermsg));
         curFile.flush();
     }
 
@@ -87,8 +91,10 @@ dms::ptr_bc dms::ReadPage(int page_id,ptr_bc dst){
     //otherwise , read page_id to dst-frame_id
     curFile.seekg((page_id+DIR_PAGE_NUM)*FRAMESIZE);
     int frame_dst_id = dst->frame_id;
-    curFile.read(&bufferpool[frame_dst_id].field[0],FRAMESIZE);
-    if(!curFile.good()) std::cerr<<"Read Page : "<<page_id << "Error!\n";
+    std::cout << "Then will read page_id : "<<page_id<<" to frame_id : "<<frame_dst_id<<std::endl;
+
+    curFile.read((char *)(&bufferpool[frame_dst_id].field[0]),FRAMESIZE);
+    if(curFile.bad()) std::cerr<<"Read Page : "<<page_id << " causes Error!\n";
     
     return dst;
 }
@@ -96,19 +102,20 @@ int dms::WritePage(int page_id,ptr_bc src)
 {
     dbFile_dir.SetPage(page_id,1);
     curFile.seekg((page_id+DIR_PAGE_NUM)*FRAMESIZE);
-    char headermsg[6];//"header"
+    char headermsg[16];//"this is a header"
     int page_size=0;
-    curFile.read(headermsg,6);
-    curFile>>page_size;
+    curFile.read(headermsg,16);
+    curFile.read((char *)&page_size,sizeof(int));
 
     //get page size ...
-    std::cout << "Page : " << page_id << "Size : " << page_size << "\n";
+    std::cout << "Page : " << page_id <<" \n";
     //flush to db-file
     int frame_src_id = src->frame_id;
     curFile.seekp((page_id+DIR_PAGE_NUM)*FRAMESIZE);
     curFile.write(&bufferpool[frame_src_id].field[0],FRAMESIZE);
-    if(!curFile.good()) std::cerr<<"Write Page : "<<page_id <<"Error!\n";
+    if(curFile.fail()) std::cerr<<"Write Page : "<<page_id <<"Error!\n";
     int writen_num = curFile.gcount();
+    std::cout << "should write success:" << FRAMESIZE << " actually " << writen_num<< std::endl;
     return writen_num;
 }
 dms::~dms() {

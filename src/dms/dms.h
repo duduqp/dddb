@@ -29,16 +29,16 @@ public:
         
         int num_32 = page_id/(sizeof(int)*8);
 
-        std::cout << "page id : " <<page_id<<std::endl;
-        std::cout << "in " << num_32 << " [int]bitmap "<<std::endl;
+     //   std::cout << "page id : " <<page_id<<std::endl;
+     //   std::cout << "in " << num_32 << " [int]bitmap "<<std::endl;
 
         int num_bit = (page_id+1)%(sizeof(int)*8);
         if(num_bit==0) num_bit = (sizeof(int)*8);
         unsigned int mask = 1U << (num_bit-1);
 
 
-        std::cout << "mask : " <<std::bitset<sizeof(int)*8>(mask)<<std::endl;
-        std::cout << "~mask : "<<std::bitset<sizeof(int)*8>(~mask)<<std::endl;
+     //   std::cout << "mask : " <<std::bitset<sizeof(int)*8>(mask)<<std::endl;
+     //   std::cout << "~mask : "<<std::bitset<sizeof(int)*8>(~mask)<<std::endl;
         if(use_bit==1) 
         {
             page_bitmap[num_32]=page_bitmap[num_32]|mask;
@@ -48,7 +48,7 @@ public:
             page_bitmap[num_32]&=(~mask);
             page_count--;
         }
-        ShowPageMap(page_id);
+    //    ShowPageMap(page_id);
         if(page_id > page_max) page_max=page_id;
         return use_bit;
     }
@@ -108,7 +108,7 @@ public:
 
         if(page_count>=0) return ;
 
-        std::cout << "begin init dir" <<std::endl;
+ //       std::cout << "begin init dir" <<std::endl;
 
         is.seekg(0);
         is.read(reinterpret_cast<char *>(&page_bit[0]),FRAMESIZE*2);
@@ -118,12 +118,13 @@ public:
         page_bitmap=&page_bit[2];
 
         //debug 
-
+/*
         for(int i=0;i<42;++i)
         {
             std::cout << page_bitmap[i] << " ";
         }
         std::cout << std::endl;
+*/
         return ;
 
     }
@@ -142,6 +143,11 @@ public:
         int num_32 = page_id / (sizeof(int)*8);
         std::cout<<std::bitset<sizeof(int)*8>(page_bitmap[num_32]);
         std::cout <<std::endl;
+    }
+
+    int GetPageMax() const
+    {
+        return page_max;
     }
 private:
     int page_max;

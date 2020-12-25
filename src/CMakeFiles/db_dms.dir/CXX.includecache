@@ -27,6 +27,8 @@ Replacer.h
 /home/ddqp/dddb/src/db.cpp
 iostream
 -
+utility
+-
 include/common.h
 /home/ddqp/dddb/src/include/common.h
 bms/bms.h
@@ -35,10 +37,6 @@ dms/dms.h
 /home/ddqp/dddb/src/dms/dms.h
 bms/Replacer.h
 /home/ddqp/dddb/src/bms/Replacer.h
-
-/home/ddqp/dddb/src/dms/dms.cpp
-dms.h
-/home/ddqp/dddb/src/dms/dms.h
 
 /home/ddqp/dddb/src/dms/dms.h
 ../include/common.h

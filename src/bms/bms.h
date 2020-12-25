@@ -13,12 +13,15 @@ public:
 public:
     explicit LRU_Replacer(std::deque<ptr_bc> & p_free):m_free(p_free){
         m_candidate_header=std::make_shared<LRU_Node>(nullptr,nullptr,nullptr);
+        m_candidate_header->next=m_candidate_header;
+        m_candidate_header->prev=m_candidate_header;
         m_candidate.insert({-1,m_candidate_header});
     }
     void AddCandidate(ptr_bc cand);
     ptr_bc Evict();
     void LiftUp(int frame_id);
     void Remove(int frame_id);
+
     ~LRU_Replacer(){  }    
 private:
     struct LRU_Node{
@@ -43,7 +46,7 @@ public:
     typedef  dms *  ptr_dms;
     typedef std::shared_ptr<BlockControlInfo> bc_bucket;
 public:
-    bms(std::string p_name,dms * p_dms,std::function<int(int)> p_hashfunc):bms_name(p_name),m_freeframenumber(0),
+    bms(std::string p_name,dms * p_dms,std::function<int(int)> p_hashfunc):bms_name(p_name),m_freeframenumber(DEFAULT_BUFFERSIZE),
         m_dms(p_dms),
         m_freeframe(std::deque<bc_bucket>(DEFAULT_BUFFERSIZE)),
         m_replacer(m_freeframe),
@@ -59,6 +62,18 @@ public:
     int UnFixPage(int p_page_id);
     int SetDirty(int p_page_id,bool flag);
     int GetFreeFrameNumber() const ;
+    int PageIdtoFrameId(int p_page_id) 
+    {
+        auto ret=LocateBlockControlInfo(p_page_id);
+        
+        return ret->frame_id;
+
+        
+    }
+    int FrameIdtoPageId(int p_frame_id) const
+    {
+        return m_frame2page[p_frame_id];
+    }
     void FlushBack();
     bc_bucket LocateBlockControlInfo(int p_page_id);
     // internal
@@ -67,8 +82,11 @@ public:
 
     ~bms() {
         //FLUSH BACK BUFFER
+        std::cout << "bms will destruct but before will flush frame back"<<std::endl;
         FlushBack();
+        std::cout << "after flush back" << std::endl;
     }
+ 
 
 private:
     //UNCOPYABLE
