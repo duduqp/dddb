@@ -7,7 +7,7 @@ void LRU_Replacer::AddCandidate(ptr_bc cand)
     std::shared_ptr<LRU_Node> to_add(std::make_shared<LRU_Node>(m_candidate_header,m_candidate_header->next,cand));
     m_candidate_header->next=to_add;
     if(!m_candidate_header->prev) m_candidate_header->prev=to_add;
-    m_candidate.insert({frame_id_key,to_add});
+     m_candidate.insert({frame_id_key,to_add});
     
 }
 
@@ -39,7 +39,17 @@ void LRU_Replacer::LiftUp(int frame_id)
 }
 void LRU_Replacer::Remove(int frame_id)
 {
-
+   if(0==m_candidate.count(frame_id))
+   {
+       std::cerr << "frame_id : "<<frame_id<<" Not In LRU"<<std::endl;
+   }else{
+        auto target = m_candidate[frame_id];
+        target->prev->next=target->next;
+        target->next->prev=target->prev;
+        m_free.push_back(target->BCI);
+        m_candidate.erase(frame_id);
+        std::cout << "LRU Remove : " <<frame_id <<std::endl;
+   }
 }
 
 int bms::FixPage(int p_page_id,int p_protection){
@@ -59,13 +69,18 @@ int bms::FixPage(int p_page_id,int p_protection){
         //lift it to most recently used end
         m_replacer.LiftUp((*it)->frame_id);
 
+        //hit
+        //...
+        
         return (*it)->frame_id;
     }
 
     //allocate new frame
+    //miss -> execute some io
+    //...
     
     //if buffer full
-    if(m_freeframenumber==0)
+    if(0==m_freeframenumber)
     {
         std::cerr << "buffer pool already full" << "\n";
         //evict 
@@ -86,7 +101,7 @@ int bms::FixPage(int p_page_id,int p_protection){
         }
         ret->page_id = -1;
     }
-     //now buffer still available
+     //now buffer is available
      //pick a bcb from freeframe
     auto free_frame = m_freeframe.front();
     m_freeframe.pop_front();
@@ -143,8 +158,30 @@ int bms::SetDirty(int p_page_id,bool flag)
 int bms::GetFreeFrameNumber() const{
     return m_freeframenumber;
 }
-void FlushBack()
+void bms::FlushBack()
 {
+    //flush back all alocated frame and reset metadata 
+    //may lock ...
+    
+    for(int i=0;i<DEFAULT_BUFFERSIZE;++i)
+    {
+        if(auto bucket= m_allocatedframe[i];!bucket.empty())
+        {
+            for(auto & bc: bucket)
+            {
+                if(bc->dirty) m_dms->WritePage(bc->page_id,bc);
+                m_freeframe.push_back(bc);
+                bucket.remove(bc);
+                m_replacer.Remove(bc->frame_id);
+                bc->dirty=false;
+                bc->page_id=-1;
+                //bc->pin_count=0;
+            }
+        }
+    }
+
+    std::fill(m_frame2page,m_frame2page+DEFAULT_BUFFERSIZE,-1);
+    m_freeframenumber=DEFAULT_BUFFERSIZE;
 
 }
 

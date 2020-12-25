@@ -1,5 +1,6 @@
 #include "dms.h"
-constexpr int DIR_PAGE_NUM=2;
+extern const int DIR_PAGE_NUM=2;
+
 extern BufferFrame bufferpool[DEFAULT_BUFFERSIZE];
 
 
@@ -22,20 +23,22 @@ int dms::OpenFile(std::string p_filename)
     auto isexisted = std::filesystem::exists(p,err);
     if(!isexisted)
     {
+        std::cout << "data.dbf is not existed" << std::endl; 
         //then create
-        std::fstream init_stream(p,std::ios::out|std::ios::app);
+        std::ofstream init_stream(p,std::ios::binary|std::ios::app);
         init_stream.seekp(0);
 
-        char zero[2*FRAMESIZE-2*sizeof(int)]={0}; 
-        init_stream<<0<<0;
-        init_stream.write(zero,sizeof(zero));
+        char zero[2*FRAMESIZE];
+        std::fill(zero,zero+2*FRAMESIZE,0);
+        init_stream.write(zero,2*FRAMESIZE);
         init_stream.flush();
     }
 
 
     //"data.dbf" must exist
-    curFile.open(p_filename,std::ios::ate|std::ios::in|std::ios::out);
-    if(!curFile) 
+    curFile.open(p_filename,std::ios::binary|std::ios::app|std::ios::in|std::ios::out);
+    
+    if(curFile.fail()) 
     {
         std::cerr<<"File : "<<p_filename<<"Not Exists" << std::endl;
         return -1;    
@@ -46,9 +49,14 @@ int dms::OpenFile(std::string p_filename)
         //2-page directory bitmap about 60000+ page-use-bit
         
         curFile.seekg(0);
+        std::cout << dbFile_dir.GetPageCount()<<std::endl;
         dbFile_dir.Initdir(curFile);
+        std::cout << "after initdir page_count : " <<dbFile_dir.GetPageCount()<<std::endl;
         if(dbFile_dir.GetPageCount()==0)//empty
         {
+            std::cout << "test dir initial ok?"<<std::endl;
+
+            std::cout << "current free page_id : "<<dbFile_dir.FindFreePage() << std::endl;
             return 0;
             //empty page , initialize it
         }

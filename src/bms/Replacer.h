@@ -5,7 +5,7 @@ class Replacer
 public:
     Replacer() {}
 
-    virtual ~Replacer() = 0;
+     ~Replacer() = default;
 
 private:
 
