@@ -140,7 +140,6 @@ int bms::FixPage(int p_page_id,int p_protection){
 }
 int bms::FixNewPage()
 {
-    //always set dirty flag after call this method
     
     int new_page_id = m_dms->NewPage();
     std::cout << "bms fix new page_id" <<new_page_id << std::endl;
@@ -160,9 +159,15 @@ int bms::UnFixPage(int p_page_id)
     }
     m_replacer.Remove(ret->frame_id);
     ret->page_id=-1;
-    m_freeframe.push_back(ret);
+    //no need to m_freeframe.push_back(ret);
     m_allocatedframe[m_hashfunc(p_page_id)].remove(ret);
+    
+    //corresponding frame will be reused but and unset page_id use_bit
+    m_freeframenumber++;
+    m_frame2page[ret->frame_id]=-1;
+    ret->dirty=false;
 
+    m_dms->SetUse(ret->page_id,0);
 }
 int bms::SetDirty(int p_page_id,bool flag)
 {
