@@ -18,7 +18,11 @@ const int DEFAULT_BUFFERSIZE=1024;// 1024 FRAMES
 const int MAXPAGE = 50000;
 
 struct BufferFrame{
-    char field[FRAMESIZE]={};
+    BufferFrame()
+    {
+        std::fill(field,field+FRAMESIZE,0);
+    }
+    char field[FRAMESIZE];
 };
 
 

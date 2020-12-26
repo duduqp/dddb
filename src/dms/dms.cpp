@@ -37,8 +37,13 @@ int dms::OpenFile(std::string p_filename)
 
 
     //"data.dbf" must exist
-    curFile.open(p_filename,std::ios::binary|std::ios::app|std::ios::in|std::ios::out);
-    
+    curFile.open(p_filename,std::ios::binary|std::ios::ate|std::ios::in|std::ios::out);
+
+    //! seek to 0
+    curFile.seekg(0);
+    curFile.seekp(0);
+    assert(curFile.tellg()==0);
+    assert(curFile.tellp()==0);
     if(curFile.fail()) 
     {
         std::cerr<<"File : "<<p_filename<<"Not Exists" << std::endl;
@@ -49,10 +54,9 @@ int dms::OpenFile(std::string p_filename)
         //page_count : int 4B
         //2-page directory bitmap about 60000+ page-use-bit
         
-        curFile.seekg(0);
-        std::cout << dbFile_dir.GetPageCount()<<std::endl;
+//        std::cout << dbFile_dir.GetPageCount()<<std::endl;
         dbFile_dir.Initdir(curFile);
-        std::cout << "after initdir page_count : " <<dbFile_dir.GetPageCount()<<std::endl;
+//        std::cout << "after initdir page_count : " <<dbFile_dir.GetPageCount()<<std::endl;
         if(dbFile_dir.GetPageCount()==0)//empty
         {
             std::cout << "test dir initial ok?"<<std::endl;
@@ -67,10 +71,12 @@ int dms::OpenFile(std::string p_filename)
     }
 
 }
-int dms::CloseFile()
+void dms::CloseFile()
 {
-    curFile.close();
+    dbFile_dir.Flush(curFile);
+     curFile.close();
     //flush back the metadata ...
+    //to do
 }
 dms::ptr_bc dms::ReadPage(int page_id,ptr_bc dst){
     //if FixNewPage for insert index or ...
@@ -79,9 +85,10 @@ dms::ptr_bc dms::ReadPage(int page_id,ptr_bc dst){
     {
         curFile.seekp((page_id+DIR_PAGE_NUM)*FRAMESIZE);
         char headermsg[FRAMESIZE]="this is a header";
-        std::cout << strlen(headermsg) << std::endl;
+        std::cout << strlen(headermsg)+1 << std::endl;
         //assert(16==sizeof(headermsg));
-        curFile.write(headermsg,strlen(headermsg));
+        curFile.write(headermsg,strlen(headermsg)+1);
+        std::cout << "after init header , io state "<<curFile.fail()<<std::endl;
         curFile.flush();
     }
 
@@ -94,8 +101,11 @@ dms::ptr_bc dms::ReadPage(int page_id,ptr_bc dst){
     std::cout << "Then will read page_id : "<<page_id<<" to frame_id : "<<frame_dst_id<<std::endl;
 
     curFile.read((char *)(&bufferpool[frame_dst_id].field[0]),FRAMESIZE);
-    if(curFile.bad()) std::cerr<<"Read Page : "<<page_id << " causes Error!\n";
-    
+    if(curFile.fail())
+    {
+        curFile.clear();
+        std::cerr<<"Read Page : "<<page_id << " causes Error!\n";
+    }
     return dst;
 }
 int dms::WritePage(int page_id,ptr_bc src)
@@ -103,19 +113,22 @@ int dms::WritePage(int page_id,ptr_bc src)
     dbFile_dir.SetPage(page_id,1);
     curFile.seekg((page_id+DIR_PAGE_NUM)*FRAMESIZE);
     char headermsg[16];//"this is a header"
-    int page_size=0;
     curFile.read(headermsg,16);
-    curFile.read((char *)&page_size,sizeof(int));
 
+    std::cout << curFile.fail() <<std::endl;
     //get page size ...
     std::cout << "Page : " << page_id <<" \n";
     //flush to db-file
     int frame_src_id = src->frame_id;
+    curFile.clear();
     curFile.seekp((page_id+DIR_PAGE_NUM)*FRAMESIZE);
-    curFile.write(&bufferpool[frame_src_id].field[0],FRAMESIZE);
-    if(curFile.fail()) std::cerr<<"Write Page : "<<page_id <<"Error!\n";
-    int writen_num = curFile.gcount();
-    std::cout << "should write success:" << FRAMESIZE << " actually " << writen_num<< std::endl;
+    curFile.write((char *)&bufferpool[frame_src_id].field[0],FRAMESIZE);
+    std::cout << bufferpool[frame_src_id].field << std::endl;
+    if(curFile.fail()) std::cerr<<"Write Page : "<<page_id <<" Error!\n";
+    curFile.clear();
+    int end = curFile.tellp();
+    int writen_num= end-(page_id+DIR_PAGE_NUM)*FRAMESIZE;
+    std::cout << " Success writing " << writen_num << std::endl;
     return writen_num;
 }
 dms::~dms() {

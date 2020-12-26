@@ -130,12 +130,14 @@ public:
     }
     void Flush(std::fstream & fs)
     {
+        
         fs.seekp(0);
         page_bit[0]=page_count;
         page_bit[1]=page_max;
         char * bitstart=(char*)page_bit;
         fs.write(bitstart,FRAMESIZE*2);
         fs.flush();
+        std::cout << "Flush Dir Back"<<std::endl;
     }
 
     void ShowPageMap(int page_id) const
@@ -152,7 +154,7 @@ public:
 private:
     int page_max;
     int page_count;
-    int page_bit[FRAMESIZE*2];
+    int page_bit[FRAMESIZE/2];
     int *page_bitmap;
 };
 
@@ -164,7 +166,7 @@ public:
 public:
     dms();
     int OpenFile(std::string p_filename);
-    int CloseFile();
+    void CloseFile();
     ptr_bc ReadPage(int page_id,ptr_bc dst);
     int WritePage(int page_id,ptr_bc src);
     ~dms() ; 

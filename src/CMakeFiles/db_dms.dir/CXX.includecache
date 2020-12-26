@@ -38,6 +38,12 @@ dms/dms.h
 bms/Replacer.h
 /home/ddqp/dddb/src/bms/Replacer.h
 
+/home/ddqp/dddb/src/dms/dms.cpp
+dms.h
+/home/ddqp/dddb/src/dms/dms.h
+cstring
+-
+
 /home/ddqp/dddb/src/dms/dms.h
 ../include/common.h
 /home/ddqp/dddb/src/include/common.h

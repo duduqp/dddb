@@ -183,7 +183,6 @@ void bms::FlushBack()
     std::cout << "flush back "<<std::endl;
     for(int i=0;i<DEFAULT_BUFFERSIZE;++i)
     {
-        std::cout << " dealing with bucket " << i << std::endl;
         if(auto bucket= m_allocatedframe[i];!bucket.empty())
         {
             for(auto  bc: bucket)
