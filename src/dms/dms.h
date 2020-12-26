@@ -13,6 +13,7 @@ public:
     Directory()
     {
         page_count = -1;
+        page_max=-1;
     }
     bool IsPageUsed(int page_id)const
     {
@@ -83,10 +84,11 @@ public:
 
     int GetPage()
     {
-        if(page_count<=page_max)
+        if(page_count<page_max+1)
         {
             int freepage = FindFreePage();
             page_count++;
+            std::cout << "spaced free page" <<freepage << std::endl;
             return freepage;
         }else{
             if(page_max+1>=MAXPAGE) return -1;
@@ -94,8 +96,11 @@ public:
 
         //allocate next page
         SetPage(page_max+1,1);
-        page_max++;page_count++;
+        // no need -> page_max
+        // no need -> page_count ++
 
+        std::cout << "allocate new page \n";
+        std::cout << "after allocate page_count and page_max are : "<<page_count <<"  " <<page_max <<std::endl;
         return page_max;
     }
 
@@ -110,11 +115,12 @@ public:
 
  //       std::cout << "begin init dir" <<std::endl;
 
-        is.seekg(0);
+        is.seekg(0,std::ios::beg);
         is.read(reinterpret_cast<char *>(&page_bit[0]),FRAMESIZE*2);
 
         page_count=page_bit[0];
         page_max = page_bit[1];
+        if(page_count==0) page_max=-1;
         page_bitmap=&page_bit[2];
 
         //debug 
@@ -130,8 +136,7 @@ public:
     }
     void Flush(std::fstream & fs)
     {
-        
-        fs.seekp(0);
+        fs.seekp(0,std::ios::beg);
         page_bit[0]=page_count;
         page_bit[1]=page_max;
         char * bitstart=(char*)page_bit;

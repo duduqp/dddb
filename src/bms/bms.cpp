@@ -143,6 +143,7 @@ int bms::FixNewPage()
     //always set dirty flag after call this method
     
     int new_page_id = m_dms->NewPage();
+    std::cout << "bms fix new page_id" <<new_page_id << std::endl;
     int new_frame_id = FixPage(new_page_id);
     SetDirty(new_page_id,true);//new page always dirty
     return new_frame_id;

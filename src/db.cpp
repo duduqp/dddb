@@ -22,11 +22,13 @@ int main()
     d.OpenFile("data.dbf");
     bms b("mybms",&d,std::function<int(int)>{myhash});
 
-    auto dir = d.GetDirView();
 
     int new_frame_id = b.FixNewPage();
     std::cout << new_frame_id << std::endl;
     std::cout << b.GetFreeFrameNumber() << std::endl;
+
+    auto dir=d.GetDirView();
+    std::cout << "after fix new page  pagecount is "<<dir.GetPageCount()<<"page_max is "<<dir.GetPageMax()<<std::endl;
 
 
     int new_frame_id_2 = b.FixPage(0);
