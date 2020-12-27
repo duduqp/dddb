@@ -1,6 +1,22 @@
 #include "bms.h"
 #include "../include/common.h"
 #include "../dms/dms.h"
+
+void LRU_Replacer::ShowLRUNodeInfo(int p_frame_id)
+{
+    if(0==m_candidate.count(p_frame_id))
+    {
+        std::cerr << "p_frame_id : " <<p_frame_id <<" not in LRU !" << std::endl;
+        return ;
+    }
+
+    auto bci = m_candidate[p_frame_id]->BCI;
+    std::cout << "frame_id : " << bci->frame_id << " dirty : " <<bci->dirty <<" page_id : " <<bci->page_id <<"\n";
+    std::cout << "frame content : " << "\n";
+    std::cout << bufferpool[bci->frame_id].field<<std::endl;
+}
+
+
 void LRU_Replacer::AddCandidate(ptr_bc cand)
 {
     int frame_id_key = cand->frame_id;
@@ -144,7 +160,7 @@ int bms::FixNewPage()
     int new_page_id = m_dms->NewPage();
     std::cout << "bms fix new page_id" <<new_page_id << std::endl;
     int new_frame_id = FixPage(new_page_id);
-    SetDirty(new_page_id,true);//new page always dirty
+    // no need to SetDirty(new_page_id,true);//new page always dirty
     return new_frame_id;
 }
 

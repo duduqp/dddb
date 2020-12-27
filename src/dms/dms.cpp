@@ -32,6 +32,14 @@ int dms::OpenFile(std::string p_filename)
         char zero[2*FRAMESIZE];
         std::fill(zero,zero+2*FRAMESIZE,0);
         init_stream.write(zero,2*FRAMESIZE);
+        
+        //write every page header
+        
+        for(int i=0;i<MAXPAGE;++i)
+        {
+            sprintf(zero,"this is header for %d",i);
+            init_stream.write(zero,FRAMESIZE);
+        }
         init_stream.flush();
     }
 
@@ -84,7 +92,8 @@ dms::ptr_bc dms::ReadPage(int page_id,ptr_bc dst){
     if(dbFile_dir.GetPageMax()==page_id)//a freshly new allocate page
     {
         curFile.seekp((page_id+DIR_PAGE_NUM)*FRAMESIZE,std::ios::beg);
-        char headermsg[FRAMESIZE]="this is a header";
+        char headermsg[FRAMESIZE];
+        sprintf(headermsg,"this is header for %d",page_id);
         //assert(16==sizeof(headermsg));
         curFile.write(headermsg,strlen(headermsg)+1);
         std::cout << "after init header , io state "<<curFile.fail()<<std::endl;
@@ -111,8 +120,8 @@ int dms::WritePage(int page_id,ptr_bc src)
 {
     dbFile_dir.SetPage(page_id,1);
     curFile.seekg((page_id+DIR_PAGE_NUM)*FRAMESIZE,std::ios::beg);
-    char headermsg[17];//"this is a header\0"
-    curFile.read(headermsg,17);
+    char pagecontent[FRAMESIZE];//"this is a header\0"
+    curFile.read(pagecontent,FRAMESIZE);
 
     std::cout << curFile.fail() <<std::endl;
     //get page size ...
@@ -137,11 +146,11 @@ int dms::GetNumPages()const
 {
     return dbFile_dir.GetPageCount() ;
 }
-void dms::SetUse(int index, int use_bit){
-    dbFile_dir.SetPage(index,use_bit);
+void dms::SetUse(int p_page_id, int use_bit){
+    dbFile_dir.SetPage(p_page_id,use_bit);
 } 
-bool dms::IsUsed(int index) const
+bool dms::IsUsed(int p_page_id) const
 {
-    return dbFile_dir.IsPageUsed(index);
+    return dbFile_dir.IsPageUsed(p_page_id);
 }
 

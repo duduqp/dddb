@@ -51,6 +51,11 @@ public:
         }
     //    ShowPageMap(page_id);
         if(page_id > page_max) page_max=page_id;
+         if(page_id==page_max&&use_bit==0)//unset page_max
+            {
+                //shrink the page_max
+                Shrink();
+            }
         return use_bit;
     }
 
@@ -155,6 +160,24 @@ public:
     int GetPageMax() const
     {
         return page_max;
+    }
+
+    void Shrink()
+    {
+        //when pagemax is unset
+        page_count-- ;
+        //find second page_max
+        int j;
+        for(j=page_max-1;j>=0;--j)
+        {
+            if(IsPageUsed(j))
+            {
+                break;
+            }
+        }
+        std::cout << "page_max shrink from "<<page_max<<" to " <<j<<std::endl;
+        page_max=j;
+
     }
 private:
     int page_max;

@@ -22,6 +22,7 @@ public:
     void LiftUp(int frame_id);
     void Remove(int frame_id);
 
+    void ShowLRUNodeInfo(int p_frame_id);
     ~LRU_Replacer(){  }    
 private:
     struct LRU_Node{
@@ -37,7 +38,6 @@ private:
     std::map<int,std::shared_ptr<LRU_Node>> m_candidate;
     std::deque<ptr_bc> & m_free;
 };
-
 
 
 class bms
@@ -78,6 +78,16 @@ public:
     bc_bucket LocateBlockControlInfo(int p_page_id);
     // internal
     bc_bucket Evict(){ return m_replacer.Evict(); }
+
+    void ShowFrameContent(int p_frame_id) const
+    {
+        std::cout << bufferpool[p_frame_id].field <<std::endl;
+    }
+
+    LRU_Replacer &  GetLRU_Replacer()
+    {
+        return m_replacer;
+    }
     
 
     ~bms() {
