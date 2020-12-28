@@ -1,0 +1,1 @@
+/usr/bin/c++   -std=c++17  -rdynamic CMakeFiles/db_dms.dir/db.cpp.o CMakeFiles/db_dms.dir/dms/dms.cpp.o CMakeFiles/db_dms.dir/bms/bms.cpp.o  -o db_dms 
