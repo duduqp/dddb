@@ -1,3 +1,0 @@
-/home/ddqp/dddb/src/CMakeFiles/rebuild_cache.dir
-/home/ddqp/dddb/src/CMakeFiles/edit_cache.dir
-/home/ddqp/dddb/src/CMakeFiles/db_dms.dir
